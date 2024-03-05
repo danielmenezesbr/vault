@@ -90,6 +90,11 @@ from the AuthorityInformationAccess extension on the certificate being inspected
 				Default:     false,
 				Description: "If set to true, rather than accepting the first successful OCSP response, query all servers and consider the certificate valid only if all servers agree.",
 			},
+			"ocsp_buffer": {
+				Type:        framework.TypeDurationSecond,
+				Default:     0,
+				Description: "A buffer based on the current time that we allow the OCSP response times to be within.",
+			},
 			"allowed_names": {
 				Type: framework.TypeCommaStringSlice,
 				Description: `A comma-separated list of names.
@@ -366,6 +371,9 @@ func (b *backend) pathCertWrite(ctx context.Context, req *logical.Request, d *fr
 	if ocspQueryAll, ok := d.GetOk("ocsp_query_all_servers"); ok {
 		cert.OcspQueryAllServers = ocspQueryAll.(bool)
 	}
+	if ocspBuffer, ok := d.GetOk("ocsp_buffer"); ok {
+		cert.OcspBuffer = time.Duration(ocspBuffer.(int)) * time.Second
+	}
 	if displayNameRaw, ok := d.GetOk("display_name"); ok {
 		cert.DisplayName = displayNameRaw.(string)
 	}
@@ -516,6 +524,7 @@ type CertEntry struct {
 	OcspServersOverride []string
 	OcspFailOpen        bool
 	OcspQueryAllServers bool
+	OcspBuffer          time.Duration
 }
 
 const pathCertHelpSyn = `

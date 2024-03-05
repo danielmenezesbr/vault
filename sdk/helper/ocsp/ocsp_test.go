@@ -168,6 +168,9 @@ func TestUnitEncodeCertIDGood(t *testing.T) {
 }
 
 func TestUnitCheckOCSPResponseCache(t *testing.T) {
+	conf := &VerifyConfig{
+		OcspEnabled: true,
+	}
 	c := New(testLogFactory, 10)
 	dummyKey0 := certIDKey{
 		NameHash:      "dummy0",
@@ -183,7 +186,7 @@ func TestUnitCheckOCSPResponseCache(t *testing.T) {
 	c.ocspResponseCache.Add(dummyKey0, &ocspCachedResponse{time: currentTime})
 	subject := &x509.Certificate{}
 	issuer := &x509.Certificate{}
-	ost, err := c.checkOCSPResponseCache(&dummyKey, subject, issuer)
+	ost, err := c.checkOCSPResponseCache(&dummyKey, subject, issuer, conf)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -192,7 +195,7 @@ func TestUnitCheckOCSPResponseCache(t *testing.T) {
 	}
 	// old timestamp
 	c.ocspResponseCache.Add(dummyKey, &ocspCachedResponse{time: float64(1395054952)})
-	ost, err = c.checkOCSPResponseCache(&dummyKey, subject, issuer)
+	ost, err = c.checkOCSPResponseCache(&dummyKey, subject, issuer, conf)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -202,7 +205,7 @@ func TestUnitCheckOCSPResponseCache(t *testing.T) {
 
 	// invalid validity
 	c.ocspResponseCache.Add(dummyKey, &ocspCachedResponse{time: float64(currentTime - 1000)})
-	ost, err = c.checkOCSPResponseCache(&dummyKey, subject, nil)
+	ost, err = c.checkOCSPResponseCache(&dummyKey, subject, nil, conf)
 	if err == nil && isValidOCSPStatus(ost.code) {
 		t.Fatalf("should have failed.")
 	}
@@ -330,8 +333,11 @@ func createCaLeafCerts(t *testing.T) (*ecdsa.PrivateKey, *x509.Certificate, *x50
 }
 
 func TestUnitValidateOCSP(t *testing.T) {
+	conf := &VerifyConfig{
+		OcspEnabled: true,
+	}
 	ocspRes := &ocsp.Response{}
-	ost, err := validateOCSP(ocspRes)
+	ost, err := validateOCSP(conf, ocspRes)
 	if err == nil && isValidOCSPStatus(ost.code) {
 		t.Fatalf("should have failed.")
 	}
@@ -340,7 +346,7 @@ func TestUnitValidateOCSP(t *testing.T) {
 	ocspRes.ThisUpdate = currentTime.Add(-2 * time.Hour)
 	ocspRes.NextUpdate = currentTime.Add(2 * time.Hour)
 	ocspRes.Status = ocsp.Revoked
-	ost, err = validateOCSP(ocspRes)
+	ost, err = validateOCSP(conf, ocspRes)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -349,7 +355,7 @@ func TestUnitValidateOCSP(t *testing.T) {
 		t.Fatalf("should have failed. expected: %v, got: %v", ocspStatusRevoked, ost.code)
 	}
 	ocspRes.Status = ocsp.Good
-	ost, err = validateOCSP(ocspRes)
+	ost, err = validateOCSP(conf, ocspRes)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -358,7 +364,7 @@ func TestUnitValidateOCSP(t *testing.T) {
 		t.Fatalf("should have success. expected: %v, got: %v", ocspStatusGood, ost.code)
 	}
 	ocspRes.Status = ocsp.Unknown
-	ost, err = validateOCSP(ocspRes)
+	ost, err = validateOCSP(conf, ocspRes)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -366,7 +372,7 @@ func TestUnitValidateOCSP(t *testing.T) {
 		t.Fatalf("should have failed. expected: %v, got: %v", ocspStatusUnknown, ost.code)
 	}
 	ocspRes.Status = ocsp.ServerFailed
-	ost, err = validateOCSP(ocspRes)
+	ost, err = validateOCSP(conf, ocspRes)
 	if err != nil {
 		t.Fatal(err)
 	}
