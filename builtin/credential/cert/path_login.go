@@ -663,6 +663,7 @@ func (b *backend) loadTrustedCerts(ctx context.Context, storage logical.Storage,
 			}
 			conf.QueryAllServers = conf.QueryAllServers || entry.OcspQueryAllServers
 			conf.OcspBuffer = entry.OcspBuffer
+			conf.OcspMaxAge = entry.OcspMaxAge
 		}
 	}
 

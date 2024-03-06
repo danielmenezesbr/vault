@@ -525,6 +525,7 @@ type CertEntry struct {
 	OcspFailOpen        bool
 	OcspQueryAllServers bool
 	OcspBuffer          time.Duration
+	OcspMaxAge          time.Duration
 }
 
 const pathCertHelpSyn = `

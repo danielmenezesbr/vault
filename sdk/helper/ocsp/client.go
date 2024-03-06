@@ -164,12 +164,18 @@ func (c *Client) getHashAlgorithmFromOID(target pkix.AlgorithmIdentifier) crypto
 
 // isInValidityRange checks the validity times of the OCSP response making sure
 // that thisUpdate and nextUpdate values are bounded within currTime
-func isInValidityRange(currTime time.Time, buffer time.Duration, ocspRes *ocsp.Response) bool {
+func isInValidityRange(currTime time.Time, buffer, maxThisUpdate time.Duration, ocspRes *ocsp.Response) bool {
 	thisUpdate := ocspRes.ThisUpdate
 
 	// If the thisUpdate value in the OCSP response wasn't set or if
 	// ThisUpdate is too far in the future fail this check
 	if thisUpdate.IsZero() || thisUpdate.After(currTime.Add(buffer)) {
+		return false
+	}
+
+	// If passed in a value for maxThisUpdate make sure that the response's
+	// ThisUpdate time isn't older than that max duration
+	if maxThisUpdate > 0 && currTime.Sub(thisUpdate) > maxThisUpdate {
 		return false
 	}
 
@@ -262,7 +268,7 @@ func validateOCSP(conf *VerifyConfig, ocspRes *ocsp.Response) (*ocspStatus, erro
 	if ocspRes == nil {
 		return nil, errors.New("OCSP Response is nil")
 	}
-	if !isInValidityRange(curTime, conf.OcspBuffer, ocspRes) {
+	if !isInValidityRange(curTime, conf.OcspBuffer, conf.OcspMaxAge, ocspRes) {
 		return &ocspStatus{
 			code: ocspInvalidValidity,
 			err:  fmt.Errorf("invalid validity: producedAt: %v, thisUpdate: %v, nextUpdate: %v", ocspRes.ProducedAt, ocspRes.ThisUpdate, ocspRes.NextUpdate),
@@ -635,6 +641,7 @@ type VerifyConfig struct {
 	OcspFailureMode     FailOpenMode
 	QueryAllServers     bool
 	OcspBuffer          time.Duration
+	OcspMaxAge          time.Duration
 }
 
 // VerifyLeafCertificate verifies just the subject against it's direct issuer
