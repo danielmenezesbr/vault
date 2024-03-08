@@ -3,14 +3,14 @@
   SPDX-License-Identifier: BUSL-1.1
 ~}}
 
-<form {{action (perform this.saveModel) on="submit"}}>
+<form {{on "submit" (perform this.saveModel)}}>
   <div class="box is-sideless is-fullwidth is-marginless">
-    <MessageError @model={{this.model}} @errorMessage={{this.model.errorMessage}} />
+    <MessageError @model={{@model}} @errorMessage={{this.errorMessage}} />
     <NamespaceReminder @mode="save" @noun="Auth Method" />
 
-    {{#each this.model.tuneAttrs as |attr|}}
-      {{#if (not (includes attr.name this.model.userLockoutConfig.modelAttrs))}}
-        <FormField data-test-field @attr={{attr}} @model={{this.model}} />
+    {{#each @model.tuneAttrs as |attr|}}
+      {{#if (not (includes attr.name @model.userLockoutConfig.modelAttrs))}}
+        <FormField data-test-field @attr={{attr}} @model={{@model}} />
       {{/if}}
     {{/each}}
 
@@ -19,9 +19,9 @@
     <Hds::Text::Body @tag="p" @size="100" @color="faint" class="has-bottom-margin-m">
       Specifies the user lockout settings for this auth mount.
     </Hds::Text::Body>
-    {{#each this.model.tuneAttrs as |attr|}}
-      {{#if (includes attr.name this.model.userLockoutConfig.modelAttrs)}}
-        <FormField @attr={{attr}} @model={{this.model}} />
+    {{#each @model.tuneAttrs as |attr|}}
+      {{#if (includes attr.name @model.userLockoutConfig.modelAttrs)}}
+        <FormField @attr={{attr}} @model={{@model}} />
       {{/if}}
     {{/each}}
   </div>
